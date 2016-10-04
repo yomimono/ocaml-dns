@@ -6,7 +6,7 @@ install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/ma
 script: bash ./.travis-docker.sh
 env:
  global:
-   - EXTRA_REMOTES="https://github.com/yomimono/mirage-dev.git#blacklist-imaplet"
+   - EXTRA_REMOTES="https://github.com/yomimono/mirage-dev.git#blacklist-imaplet" 
    - PACKAGE="dns"
    - DEPOPTS="tcpip lwt async"
    - REVDEPS="true"
