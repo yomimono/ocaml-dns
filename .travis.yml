@@ -9,7 +9,7 @@ env:
    - FORK_USER="yomimono" FORK_BRANCH="revdep-pins"
    - PINS="mirage-dns:. dns-async:. dns-lwt:. dns-lwt-unix:."
    - PACKAGE="dns"
-   - DEPOPTS="mirage-dns dns-async dns-lwt dns-lwt-unix"
+   - REVDEPS="mirage-dns dns-async dns-lwt dns-lwt-unix"
  matrix:
    - DISTRO=debian-stable OCAML_VERSION=4.03.0
    - DISTRO=debian-testing OCAML_VERSION=4.04.1
