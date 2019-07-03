@@ -5,6 +5,9 @@
 *)
 
 module type S = sig
+  type tcp
+  type udp
+
   type flow
   (** A flow is a connection produced by {!U.connect} *)
 
@@ -26,14 +29,11 @@ module type S = sig
       just use the opaque [io_addr].
       TODO*)
 
-  type stack
-  (** A stack with which to connect, e.g. {!IPv4.tcpv4}*)
-
   type t
   (** The abstract state of a DNS client. *)
 
-  val create : ?nameserver:ns_addr -> stack -> t
-  (** [create ~nameserver stack] creates the state record of the DNS client. *)
+  val create : ?nameserver:ns_addr -> tcp -> udp -> t
+  (** [create ~nameserver tcp udp] creates the state record of the DNS client. *)
 
   val nameserver : t -> ns_addr
   (** The address of a nameserver that is supposed to work with
@@ -61,8 +61,8 @@ end
 module Make : functor (U : S) ->
 sig
 
-  val create : ?nameserver:U.ns_addr -> U.stack -> U.t
-  (** [create ~nameserver stack] creates the state of the DNS client. *)
+  val create : ?nameserver:U.ns_addr -> U.tcp -> U.udp -> U.t
+  (** [create ~nameserver tcp udp] creates the state of the DNS client. *)
 
   val nameserver : U.t -> U.ns_addr
   (** [nameserver t] returns the default nameserver to be used. *)

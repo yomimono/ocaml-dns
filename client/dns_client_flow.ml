@@ -1,12 +1,13 @@
 module type S = sig
+  type tcp
+  type udp
   type flow
   type (+'a,+'b) io constraint 'b = [> `Msg of string]
   type io_addr
   type ns_addr = ([`TCP | `UDP]) * io_addr
-  type stack
   type t
 
-  val create : ?nameserver:ns_addr -> stack -> t
+  val create : ?nameserver:ns_addr -> tcp -> udp -> t
 
   val nameserver : t -> ns_addr
 
@@ -22,9 +23,9 @@ end
 module Make = functor (Uflow:S) ->
 struct
 
-  let create ?nameserver stack = Uflow.create ?nameserver stack
+  let create = Uflow.create
 
-  let nameserver t = Uflow.nameserver t
+  let nameserver = Uflow.nameserver
 
   let getaddrinfo (type requested) t ?nameserver (query_type:requested Dns.Rr_map.key) name
     : (requested, [> `Msg of string]) Uflow.io =
@@ -52,16 +53,16 @@ struct
           | `UDP -> Uflow.lift (Error (`Msg "Truncated UDP response")) end
     in recv_loop Cstruct.empty
 
-  let gethostbyname stack ?nameserver domain =
+  let gethostbyname t ?nameserver domain =
     let (>>=) = Uflow.resolve in
-    getaddrinfo stack ?nameserver Dns.Rr_map.A domain >>= fun (_ttl, resp) ->
+    getaddrinfo t ?nameserver Dns.Rr_map.A domain >>= fun (_ttl, resp) ->
     match Dns.Rr_map.Ipv4_set.choose_opt resp with
     | None -> Error (`Msg "No A record found")
     | Some ip -> Ok ip
 
-  let gethostbyname6 stack ?nameserver domain =
+  let gethostbyname6 t ?nameserver domain =
     let (>>=) = Uflow.resolve in
-    getaddrinfo stack ?nameserver Dns.Rr_map.Aaaa domain >>= fun (_ttl, res) ->
+    getaddrinfo t ?nameserver Dns.Rr_map.Aaaa domain >>= fun (_ttl, res) ->
     match Dns.Rr_map.Ipv6_set.choose_opt res with
     | None -> Error (`Msg "No AAAA record found")
     | Some ip -> Ok ip

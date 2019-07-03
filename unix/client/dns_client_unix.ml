@@ -4,19 +4,21 @@
 *)
 
 module Uflow : Dns_client_flow.S
-  with type flow = Unix.file_descr
+  with type tcp = unit
+   and type udp = unit
+   and type flow = Unix.file_descr
    and type io_addr = Unix.inet_addr * int
-   and type stack = unit
    and type (+'a,+'b) io = ('a,[> `Msg of string]as 'b) result
 = struct
+  type tcp = unit
+  type udp = unit
   type io_addr = Unix.inet_addr * int
   type ns_addr = [`TCP | `UDP] * io_addr
-  type stack = unit
   type flow = Unix.file_descr
   type t = { nameserver : ns_addr }
   type (+'a,+'b) io = ('a,'b) result constraint 'b = [> `Msg of string]
 
-  let create ?(nameserver = `TCP, (Unix.inet_addr_of_string "91.239.100.100", 53)) () =
+  let create ?(nameserver = `TCP, (Unix.inet_addr_of_string "91.239.100.100", 53)) () () =
     { nameserver }
 
   let nameserver { nameserver } = nameserver

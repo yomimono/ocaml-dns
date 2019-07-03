@@ -1,5 +1,7 @@
 let () =
-  let t = Dns_client_unix.create () in
+  let tcp : Dns_client_unix.Uflow.tcp = () in
+  let udp : Dns_client_unix.Uflow.udp = () in
+  let t = Dns_client_unix.create tcp udp in
   let domain = Domain_name.(host_exn (of_string_exn Sys.argv.(1))) in
   let ipv4 =
     match Dns_client_unix.gethostbyname t domain with

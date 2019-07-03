@@ -3,27 +3,31 @@ open Lwt.Infix
 let src = Logs.Src.create "dns_mirage_client" ~doc:"effectful DNS client layer"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-module Make (S : Mirage_stack_lwt.V4) = struct
+module Make (TCP: Mirage_protocols_lwt.TCP with type ipaddr = Ipaddr.V4.t)(UDP: Mirage_protocols_lwt.UDP) = struct
 
   module Uflow : Dns_client_flow.S
-    with type flow = S.TCPV4.flow
-     and type stack = S.t
+    with type tcp = TCP.t
+     and type udp = UDP.t
+     and type flow = TCP.flow
      and type (+'a,+'b) io = ('a, 'b) Lwt_result.t
            constraint 'b = [> `Msg of string]
      and type io_addr = Ipaddr.V4.t * int = struct
-    type flow = S.TCPV4.flow
-    type stack = S.t
+
+    type tcp = TCP.t
+    type udp = UDP.t
+    type flow = TCP.flow
     type io_addr = Ipaddr.V4.t * int
     type ns_addr = [`TCP | `UDP] * io_addr
     type (+'a,+'b) io = ('a, 'b) Lwt_result.t
       constraint 'b = [> `Msg of string]
     type t = {
       nameserver : ns_addr ;
-      stack : stack ;
+      tcp : TCP.t ;
+      udp : UDP.t ;
     }
 
-    let create ?(nameserver = `TCP, (Ipaddr.V4.of_string_exn "91.239.100.100", 53)) stack =
-      { nameserver ; stack }
+    let create ?(nameserver = `TCP, (Ipaddr.V4.of_string_exn "91.239.100.100", 53)) tcp udp =
+      { nameserver ; tcp ; udp }
 
     let nameserver { nameserver ; _ } = nameserver
 
@@ -33,22 +37,22 @@ module Make (S : Mirage_stack_lwt.V4) = struct
 
     let connect ?nameserver:ns t =
       let _proto, addr = match ns with None -> nameserver t | Some x -> x in
-      S.TCPV4.create_connection (S.tcpv4 t.stack) addr >|= function
+      TCP.create_connection t.tcp addr >|= function
       | Error e ->
         Log.err (fun m -> m "error connecting to nameserver %a"
-                    S.TCPV4.pp_error e) ;
+                    TCP.pp_error e) ;
         Error (`Msg "connect failure")
       | Ok flow -> Ok flow
 
     let recv flow =
-      S.TCPV4.read flow >|= function
-      | Error e -> Error (`Msg (Fmt.to_to_string S.TCPV4.pp_error e))
+      TCP.read flow >|= function
+      | Error e -> Error (`Msg (Fmt.to_to_string TCP.pp_error e))
       | Ok (`Data cs) -> Ok cs
       | Ok `Eof -> Ok Cstruct.empty
 
     let send flow s =
-      S.TCPV4.write flow s >|= function
-      | Error e -> Error (`Msg (Fmt.to_to_string S.TCPV4.pp_write_error e))
+      TCP.write flow s >|= function
+      | Error e -> Error (`Msg (Fmt.to_to_string TCP.pp_write_error e))
       | Ok () -> Ok ()
   end
 
