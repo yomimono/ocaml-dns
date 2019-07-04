@@ -9,17 +9,19 @@ module Uflow : Dns_client_flow.S
   with type flow = Lwt_unix.file_descr
  and type io_addr = Lwt_unix.inet_addr * int
  and type (+'a,+'b) io = ('a,'b) Lwt_result.t
- and type stack = unit
+ and type tcp = unit
+ and type udp = unit
 = struct
   type io_addr = Lwt_unix.inet_addr * int
   type flow = Lwt_unix.file_descr
   type ns_addr = [`TCP | `UDP] * io_addr
   type (+'a,+'b) io = ('a,'b) Lwt_result.t
     constraint 'b = [> `Msg of string]
-  type stack = unit
   type t = { nameserver : ns_addr }
+  type tcp = unit
+  type udp = unit
 
-  let create ?(nameserver = `TCP, (Unix.inet_addr_of_string "91.239.100.100", 53)) () =
+  let create ?(nameserver = `TCP, (Unix.inet_addr_of_string "91.239.100.100", 53)) () () =
     { nameserver }
 
   let nameserver { nameserver } = nameserver
