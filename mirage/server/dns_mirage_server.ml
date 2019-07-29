@@ -7,9 +7,10 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 module Make (P : Mirage_clock_lwt.PCLOCK) (M : Mirage_clock_lwt.MCLOCK) (TIME : Mirage_time_lwt.S) (S : Mirage_stack_lwt.V4) = struct
 
-  module Dns = Dns_mirage.Make(S)
-
   module T = S.TCPV4
+  module U = S.UDPV4
+
+  module Dns = Dns_mirage.Make(T)(U)
 
   let primary ?(on_update = fun ~old:_ _ -> Lwt.return_unit) ?(on_notify = fun _ _ -> Lwt.return None) ?(timer = 2) ?(port = 53) stack t =
     let state = ref t in
@@ -47,7 +48,7 @@ module Make (P : Mirage_clock_lwt.PCLOCK) (M : Mirage_clock_lwt.MCLOCK) (TIME : 
          | Error () -> drop ip ; connect_and_send ip) >>= function
       | Ok () -> Lwt.return_unit
       | Error () ->
-        drop ip ; Dns.send_udp stack port ip 53 data
+        drop ip ; Dns.send_udp (S.udpv4 stack) port ip 53 data
     in
 
     let maybe_update_state t =
@@ -120,7 +121,7 @@ module Make (P : Mirage_clock_lwt.PCLOCK) (M : Mirage_clock_lwt.MCLOCK) (TIME : 
       maybe_notify recv_task t now elapsed n' >>= fun () ->
       (match answer with
        | None -> Log.warn (fun m -> m "empty answer") ; Lwt.return_unit
-       | Some answer -> Dns.send_udp stack port src src_port answer) >>= fun () ->
+       | Some answer -> Dns.send_udp (S.udpv4 stack) port src src_port answer) >>= fun () ->
       Lwt_list.iter_p (send_notify recv_task) notify
     in
     S.listen_udpv4 stack ~port udp_cb ;
@@ -234,7 +235,7 @@ module Make (P : Mirage_clock_lwt.PCLOCK) (M : Mirage_clock_lwt.MCLOCK) (TIME : 
       List.iter (fun x -> Lwt.async (fun () -> request x)) out ;
       match answer with
       | None -> Lwt.return_unit
-      | Some out -> Dns.send_udp stack port src src_port out
+      | Some out -> Dns.send_udp (S.udpv4 stack) port src src_port out
     in
     S.listen_udpv4 stack ~port udp_cb ;
     Log.info (fun m -> m "secondary DNS listening on UDP port %d" port) ;

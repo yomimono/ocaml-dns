@@ -3,4 +3,4 @@
  (synopsis "A Domain Name system (DNS) library, MirageOS integration")
  (public_name dns-mirage)
  (wrapped false)
- (libraries dns mirage-stack-lwt ipaddr lwt))
+ (libraries dns mirage-protocols-lwt ipaddr lwt))

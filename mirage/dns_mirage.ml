@@ -5,7 +5,9 @@ open Lwt.Infix
 let src = Logs.Src.create "dns_mirage" ~doc:"effectful DNS layer"
 module Log = (val Logs.src_log src : Logs.LOG)
 
-module Make (S : Mirage_stack_lwt.V4) = struct
+module Make
+    (T : Mirage_protocols_lwt.TCP with type ipaddr = Ipaddr.V4.t)
+    (U: Mirage_protocols_lwt.UDP with type ipaddr = Ipaddr.V4.t) = struct
 
   module IS = Set.Make(Ipaddr.V4)
 
@@ -23,9 +25,6 @@ module Make (S : Mirage_stack_lwt.V4) = struct
       end)
     let find k t = try Some (find k t) with Not_found -> None
   end
-
-  module U = S.UDPV4
-  module T = S.TCPV4
 
   type f = {
     flow : T.flow ;
@@ -56,10 +55,10 @@ module Make (S : Mirage_stack_lwt.V4) = struct
         f.linger <- Cstruct.append f.linger b ;
         read_exactly f length
 
-  let send_udp stack src_port dst dst_port data =
+  let send_udp udp src_port dst dst_port data =
     Log.info (fun m -> m "udp: sending %d bytes from %d to %a:%d"
                  (Cstruct.len data) src_port Ipaddr.V4.pp dst dst_port) ;
-    U.write ~src_port ~dst ~dst_port (S.udpv4 stack) data >|= function
+    U.write ~src_port ~dst ~dst_port udp data >|= function
     | Error e -> Log.warn (fun m -> m "udp: failure %a while sending from %d to %a:%d"
                               U.pp_error e src_port Ipaddr.V4.pp dst dst_port)
     | Ok () -> ()
